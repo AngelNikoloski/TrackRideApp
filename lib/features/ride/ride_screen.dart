@@ -7,6 +7,7 @@ import '../services/gps_service.dart';
 import '../../shared/theme/app_theme.dart';
 import 'leaflet_map_widget.dart';
 import 'ride_provider.dart';
+import '../achievements/achievement_service.dart';
 
 class RideScreen extends ConsumerStatefulWidget {
   const RideScreen({super.key});
@@ -21,8 +22,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
   bool _isSaving = false;
 
-  // ── Route update ─────────────────────────────────────────────────────────────
-  // Only push a JS update when a new point arrives (avoid flooding the WebView)
   int _lastPointCount = 0;
 
   void _maybeUpdateMap(RideState state) {
@@ -32,7 +31,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
     }
   }
 
-  // ── Save ride ────────────────────────────────────────────────────────────────
   Future<void> _showSaveDialog(RideState state) async {
     final nameCtrl = TextEditingController(text: 'My Ride');
     final confirmed = await showDialog<bool>(
@@ -94,82 +92,149 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   }
 
   Future<void> _saveRide(String name, RideState state) async {
-    setState(() => _isSaving = true);
-    try {
-      final userId = _supabase.auth.currentUser!.id;
+  setState(() => _isSaving = true);
+  try {
+    final userId = _supabase.auth.currentUser!.id;
 
-      // 1. Insert ride row
-      final rideRow = await _supabase.from('rides').insert({
-        'user_id': userId,
-        'name': name,
-        'status': 'completed',
-        'distance_km': state.distanceKm,
-        'avg_speed_kmh': state.avgSpeedKmh,
-        'max_speed_kmh': state.maxSpeedKmh,
-        'duration': _durationToPostgres(state.elapsed),
-        'elevation_gain_m': state.elevationGainM,
-        'started_at': DateTime.now()
-            .subtract(state.elapsed)
-            .toIso8601String(),
-        'ended_at': DateTime.now().toIso8601String(),
-      }).select().single();
+    // 1. Insert ride row
+    final rideRow = await _supabase.from('rides').insert({
+      'user_id': userId,
+      'name': name,
+      'status': 'completed',
+      'distance_km': state.distanceKm,
+      'avg_speed_kmh': state.avgSpeedKmh,
+      'max_speed_kmh': state.maxSpeedKmh,
+      'duration': _durationToPostgres(state.elapsed),
+      'elevation_gain_m': state.elevationGainM,
+      'started_at': DateTime.now()
+          .subtract(state.elapsed)
+          .toIso8601String(),
+      'ended_at': DateTime.now().toIso8601String(),
+    }).select().single();
 
-      final rideId = rideRow['id'] as String;
+    final rideId = rideRow['id'] as String;
 
-      // 2. Batch-insert GPS points (max 500 at a time)
-      if (state.points.isNotEmpty) {
-        final rows = state.points
-            .map((p) => {
-                  'ride_id': rideId,
-                  'latitude': p.latitude,
-                  'longitude': p.longitude,
-                  'altitude_m': p.altitudeM,
-                  'speed_kmh': p.speedKmh,
-                  'recorded_at': p.recordedAt.toIso8601String(),
-                })
-            .toList();
+    // 2. Batch-insert GPS points
+    if (state.points.isNotEmpty) {
+      final rows = state.points
+          .map((p) => {
+                'ride_id': rideId,
+                'latitude': p.latitude,
+                'longitude': p.longitude,
+                'altitude_m': p.altitudeM,
+                'speed_kmh': p.speedKmh,
+                'recorded_at': p.recordedAt.toIso8601String(),
+              })
+          .toList();
 
-        for (var i = 0; i < rows.length; i += 500) {
-          final chunk = rows.sublist(
-              i, i + 500 > rows.length ? rows.length : i + 500);
-          await _supabase.from('ride_points').insert(chunk);
-        }
+      for (var i = 0; i < rows.length; i += 500) {
+        final chunk = rows.sublist(
+            i, i + 500 > rows.length ? rows.length : i + 500);
+        await _supabase.from('ride_points').insert(chunk);
       }
-
-      // 3. Update profile aggregates
-      await _supabase.rpc('update_profile_stats', params: {'p_user_id': userId});
-
-      // 4. Reset service + navigate
-      ref.read(gpsServiceProvider).reset();
-      _mapKey.currentState?.clear();
-      _lastPointCount = 0;
-
-      if (mounted) {
-        Navigator.pushReplacementNamed(context, '/history');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Save failed: ${e.toString()}'),
-            backgroundColor: Colors.red.shade700,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10)),
-            action: SnackBarAction(
-              label: 'Retry',
-              textColor: Colors.white,
-              onPressed: () => _saveRide(name, state),
-            ),
-          ),
-        );
-      }
-    } finally {
-      if (mounted) setState(() => _isSaving = false);
     }
-  }
 
-  // ── Helpers ──────────────────────────────────────────────────────────────────
+    // 3. Update profile aggregates
+    await _supabase.rpc('update_profile_stats', params: {'p_user_id': userId});
+
+    // 4. Fetch updated profile stats
+    final updatedProfile = await _supabase
+        .from('profiles')
+        .select('total_distance_km, total_rides')
+        .eq('id', userId)
+        .single();
+
+    final totalRides = updatedProfile['total_rides'] as int;
+    final totalDistanceKm = (updatedProfile['total_distance_km'] as num).toDouble();
+
+    // 5. Check and grant achievements
+    final newAchievements = await AchievementService().checkAndGrant(
+      userId: userId,
+      rideDistanceKm: state.distanceKm,
+      maxSpeedKmh: state.maxSpeedKmh,
+      totalDistanceKm: totalDistanceKm,
+      totalRides: totalRides,
+      startedAt: DateTime.now().subtract(state.elapsed),
+    );
+
+    // 6. Reset before navigating
+    ref.read(gpsServiceProvider).reset();
+    _mapKey.currentState?.clear();
+    _lastPointCount = 0;
+
+    if (!mounted) return;
+
+    // 7. Show achievement dialog if any were earned — BEFORE navigating
+    if (newAchievements.isNotEmpty) {
+      await showDialog(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          backgroundColor: AppTheme.surface,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20)),
+          title: const Text(
+            '🏆 Achievement unlocked!',
+            style: TextStyle(
+                color: AppTheme.textPrimary,
+                fontWeight: FontWeight.w700,
+                fontSize: 18),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: newAchievements
+                .map((a) => Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        a,
+                        style: const TextStyle(
+                            color: AppTheme.textPrimary,
+                            fontSize: 16),
+                      ),
+                    ))
+                .toList(),
+          ),
+          actions: [
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10)),
+              ),
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Awesome!'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // 8. Navigate only after dialog is dismissed
+    if (mounted) {
+      Navigator.pushReplacementNamed(context, '/history');
+    }
+  } catch (e) {
+    if (mounted) {
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Save failed: ${e.toString()}'),
+          backgroundColor: Colors.red.shade700,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10)),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: () => _saveRide(name, state),
+          ),
+        ),
+      );
+    }
+  } finally {
+    if (mounted) setState(() => _isSaving = false);
+  }
+}
+
   String _formatDuration(Duration d) {
     final h = d.inHours.toString().padLeft(2, '0');
     final m = (d.inMinutes % 60).toString().padLeft(2, '0');
@@ -180,7 +245,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   String _durationToPostgres(Duration d) =>
       '${d.inHours}:${(d.inMinutes % 60).toString().padLeft(2, '0')}:${(d.inSeconds % 60).toString().padLeft(2, '0')}';
 
-  // ── Build ─────────────────────────────────────────────────────────────────────
   @override
   Widget build(BuildContext context) {
     final rideAsync = ref.watch(rideStateProvider);
@@ -197,12 +261,10 @@ class _RideScreenState extends ConsumerState<RideScreen> {
 
           return Stack(
             children: [
-              // ── Full-screen map ────────────────────────────────────────────
               Positioned.fill(
                 child: LeafletMapWidget(key: _mapKey),
               ),
 
-              // ── Back button ────────────────────────────────────────────────
               Positioned(
                 top: MediaQuery.of(context).padding.top + 12,
                 left: 16,
@@ -216,7 +278,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                 ),
               ),
 
-              // ── Stats overlay ──────────────────────────────────────────────
               Positioned(
                 top: MediaQuery.of(context).padding.top + 12,
                 left: 72,
@@ -224,7 +285,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
                 child: _StatsOverlay(state: state, formatDuration: _formatDuration),
               ),
 
-              // ── Control bar ────────────────────────────────────────────────
               Positioned(
                 left: 0,
                 right: 0,
@@ -252,7 +312,6 @@ class _RideScreenState extends ConsumerState<RideScreen> {
   }
 }
 
-// ── Stats overlay ────────────────────────────────────────────────────────────
 class _StatsOverlay extends StatelessWidget {
   final RideState state;
   final String Function(Duration) formatDuration;
@@ -348,7 +407,6 @@ class _Stat extends StatelessWidget {
   }
 }
 
-// ── Control bar ──────────────────────────────────────────────────────────────
 class _ControlBar extends StatelessWidget {
   final RideState state;
   final bool isSaving;
@@ -525,7 +583,6 @@ class _ActionButton extends StatelessWidget {
   }
 }
 
-// ── Frosted glass button (back arrow) ───────────────────────────────────────
 class _GlassButton extends StatelessWidget {
   final VoidCallback? onTap;
   final Widget child;

@@ -1,7 +1,7 @@
-// lib/features/profile/profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../shared/theme/app_theme.dart';
+import '../achievements/achievement_service.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -143,6 +143,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    //Profile card 
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -158,11 +159,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ),
                       child: Column(
                         children: [
-                          // Avatar circle
+                          // Avatar
                           Container(
                             width: 80,
                             height: 80,
-                            decoration: BoxDecoration(
+                            decoration: const BoxDecoration(
                               color: AppTheme.primary,
                               shape: BoxShape.circle,
                             ),
@@ -262,7 +263,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                           const SizedBox(height: 6),
 
-                          // Email
                           Text(
                             _supabase.auth.currentUser?.email ?? '',
                             style: const TextStyle(
@@ -277,7 +277,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     const SizedBox(height: 24),
 
                     const Text(
-                      'Achievements',
+                      'Stats',
                       style: TextStyle(
                         color: AppTheme.textPrimary,
                         fontWeight: FontWeight.w700,
@@ -295,27 +295,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       mainAxisSpacing: 12,
                       childAspectRatio: 1.5,
                       children: [
-                        _AchievementCard(
+                        _StatCard(
                           icon: Icons.flag_rounded,
                           label: 'Total Rides',
                           value: '${_profile?['total_rides'] ?? 0}',
                           color: const Color(0xFF2563EB),
                         ),
-                        _AchievementCard(
+                        _StatCard(
                           icon: Icons.route_rounded,
                           label: 'Total Distance',
                           value:
                               '${(_profile?['total_distance_km'] as num? ?? 0).toStringAsFixed(2)} km',
                           color: const Color(0xFF0891B2),
                         ),
-                        _AchievementCard(
+                        _StatCard(
                           icon: Icons.bolt_rounded,
                           label: 'Highest Speed',
                           value:
                               '${(_profile?['max_speed_kmh'] as num? ?? 0).toStringAsFixed(1)} km/h',
                           color: const Color(0xFFF59E0B),
                         ),
-                        _AchievementCard(
+                        _StatCard(
                           icon: Icons.timer_outlined,
                           label: 'Longest Duration',
                           value: _formatDuration(_profile?['longest_duration']),
@@ -324,18 +324,27 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ],
                     ),
 
-                    // Longest ride (full width)
+                    const SizedBox(height: 24),
+
+                    //Achievements 
+                    const Text(
+                      'Achievements',
+                      style: TextStyle(
+                        color: AppTheme.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 17,
+                      ),
+                    ),
+
                     const SizedBox(height: 12),
-                    _AchievementCardWide(
-                      icon: Icons.emoji_events_rounded,
-                      label: 'Longest Ride',
-                      value:
-                          '${(_profile?['total_distance_km'] as num? ?? 0).toStringAsFixed(2)} km total across ${_profile?['total_rides'] ?? 0} rides',
-                      color: const Color(0xFF16A34A),
+
+                    _AchievementsSection(
+                      userId: _supabase.auth.currentUser!.id,
                     ),
 
                     const SizedBox(height: 32),
 
+                    // Sign out
                     OutlinedButton.icon(
                       onPressed: _signOut,
                       icon: const Icon(Icons.logout_rounded,
@@ -365,14 +374,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-//Achievement card
-class _AchievementCard extends StatelessWidget {
+//Stats card (renamed from _AchievementCard) 
+class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
   final String value;
   final Color color;
 
-  const _AchievementCard({
+  const _StatCard({
     required this.icon,
     required this.label,
     required this.value,
@@ -430,68 +439,224 @@ class _AchievementCard extends StatelessWidget {
   }
 }
 
-class _AchievementCardWide extends StatelessWidget {
-  final IconData icon;
-  final String label;
-  final String value;
-  final Color color;
+//Achievements section 
+class _AchievementsSection extends StatefulWidget {
+  final String userId;
 
-  const _AchievementCardWide({
-    required this.icon,
-    required this.label,
-    required this.value,
-    required this.color,
-  });
+  const _AchievementsSection({required this.userId});
+
+  @override
+  State<_AchievementsSection> createState() => _AchievementsSectionState();
+}
+
+class _AchievementsSectionState extends State<_AchievementsSection> {
+  List<Map<String, dynamic>> _achievements = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _load();
+  }
+
+  Future<void> _load() async {
+    final data = await AchievementService().fetchForUser(widget.userId);
+    if (mounted) {
+      setState(() {
+        _achievements = data;
+        _loading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: AppTheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    if (_loading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    final earned =
+        _achievements.where((a) => a['locked'] == false).toList();
+    final locked =
+        _achievements.where((a) => a['locked'] == true).toList();
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Unlocked count badge
+        Container(
+          padding:
+              const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: const Color(0xFF7C3AED).withOpacity(0.1),
+            borderRadius: BorderRadius.circular(20),
           ),
+          child: Text(
+            '${earned.length} / ${_achievements.length} unlocked',
+            style: const TextStyle(
+              color: Color(0xFF7C3AED),
+              fontWeight: FontWeight.w700,
+              fontSize: 12,
+            ),
+          ),
+        ),
+
+        const SizedBox(height: 12),
+
+        // Earned
+        if (earned.isNotEmpty) ...[
+          ...earned.map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _AchievementTile(achievement: a, locked: false),
+              )),
+          const SizedBox(height: 8),
         ],
+
+        // Locked header
+        if (locked.isNotEmpty) ...[
+          const Text(
+            'Locked',
+            style: TextStyle(
+              color: AppTheme.textSecondary,
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...locked.map((a) => Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: _AchievementTile(achievement: a, locked: true),
+              )),
+        ],
+      ],
+    );
+  }
+}
+
+class _AchievementTile extends StatelessWidget {
+  final Map<String, dynamic> achievement;
+  final bool locked;
+
+  const _AchievementTile({
+    required this.achievement,
+    required this.locked,
+  });
+
+  String _formatDate(String? raw) {
+    if (raw == null) return '';
+    final dt = DateTime.tryParse(raw)?.toLocal();
+    if (dt == null) return '';
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return 'Earned ${dt.day} ${months[dt.month - 1]} ${dt.year}';
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final emoji = achievement['emoji'] as String;
+    final title = achievement['title'] as String;
+    final description = achievement['description'] as String;
+    final earnedAt = achievement['earned_at'] as String?;
+
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: locked
+            ? AppTheme.surface.withOpacity(0.5)
+            : AppTheme.surface,
+        borderRadius: BorderRadius.circular(16),
+        border: locked
+            ? Border.all(color: Colors.grey.shade200)
+            : Border.all(
+                color: const Color(0xFF7C3AED).withOpacity(0.2)),
+        boxShadow: locked
+            ? []
+            : [
+                BoxShadow(
+                  color: const Color(0xFF7C3AED).withOpacity(0.07),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
       ),
       child: Row(
         children: [
           Container(
-            padding: const EdgeInsets.all(10),
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
-              borderRadius: BorderRadius.circular(12),
+              color: locked
+                  ? Colors.grey.shade100
+                  : const Color(0xFF7C3AED).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(14),
             ),
-            child: Icon(icon, color: color, size: 24),
+            child: Center(
+              child: locked
+                  ? Icon(Icons.lock_rounded,
+                      color: Colors.grey.shade400, size: 22)
+                  : Text(emoji,
+                      style: const TextStyle(fontSize: 24)),
+            ),
           ),
+
           const SizedBox(width: 14),
+
+          // Text block
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  label,
-                  style: const TextStyle(
-                    color: AppTheme.textSecondary,
+                  title,
+                  style: TextStyle(
+                    color: locked
+                        ? AppTheme.textSecondary
+                        : AppTheme.textPrimary,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 14,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  description,
+                  style: TextStyle(
+                    color: AppTheme.textSecondary
+                        .withOpacity(locked ? 0.6 : 1.0),
                     fontSize: 12,
                   ),
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  value,
-                  style: const TextStyle(
-                    color: AppTheme.textPrimary,
-                    fontWeight: FontWeight.w700,
-                    fontSize: 15,
+                if (!locked && earnedAt != null) ...[
+                  const SizedBox(height: 4),
+                  Text(
+                    _formatDate(earnedAt),
+                    style: const TextStyle(
+                      color: Color(0xFF7C3AED),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
+                ],
               ],
             ),
           ),
+
+          // Checkmark for earned
+          if (!locked)
+            Container(
+              width: 24,
+              height: 24,
+              decoration: const BoxDecoration(
+                color: Color(0xFF7C3AED),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.check_rounded,
+                color: Colors.white,
+                size: 14,
+              ),
+            ),
         ],
       ),
     );
