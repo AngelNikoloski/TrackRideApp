@@ -53,11 +53,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  Future<void> _signOut() async {
-    await _supabase.auth.signOut();
-    if (mounted) Navigator.pushReplacementNamed(context, '/login'); 
-  }
-
   String _formatDuration(String? raw) {
     if (raw == null) return '0m';
     // Supabase returns interval as e.g. "01:23:45" or "00:05:30"
@@ -124,12 +119,6 @@ class _HomeScreenState extends State<HomeScreen> {
                                     fontSize: 14),
                               ),
                             ],
-                          ),
-                          IconButton(
-                            onPressed: _signOut,
-                            icon: const Icon(Icons.logout_rounded),
-                            color: AppTheme.textSecondary,
-                            tooltip: 'Sign out',
                           ),
                         ],
                       ),
