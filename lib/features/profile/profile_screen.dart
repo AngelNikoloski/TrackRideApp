@@ -143,7 +143,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ── Avatar + name + email ──────────────────────
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
@@ -181,7 +180,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                           const SizedBox(height: 16),
 
-                          // Name (editable)
                           if (_isEditing) ...[
                             TextField(
                               controller: _nameController,
@@ -278,7 +276,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 24),
 
-                    // ── Achievements ───────────────────────────────
                     const Text(
                       'Achievements',
                       style: TextStyle(
@@ -339,7 +336,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
                     const SizedBox(height: 32),
 
-                    // ── Sign out ───────────────────────────────────
                     OutlinedButton.icon(
                       onPressed: _signOut,
                       icon: const Icon(Icons.logout_rounded,
@@ -369,7 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-// ── Achievement card (grid) ──────────────────────────────────────────────────
+//Achievement card
 class _AchievementCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -434,7 +430,6 @@ class _AchievementCard extends StatelessWidget {
   }
 }
 
-// ── Achievement card wide (full width) ──────────────────────────────────────
 class _AchievementCardWide extends StatelessWidget {
   final IconData icon;
   final String label;
