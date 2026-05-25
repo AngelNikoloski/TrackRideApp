@@ -184,7 +184,7 @@ class GpsService {
     }
 
     int elevGain = _state.elevationGainM;
-    if (_lastAltitude != null && pos.altitude > _lastAltitude!) {
+    if (_lastAltitude != null && pos.altitude - _lastAltitude! > 2.0) {
       elevGain += (pos.altitude - _lastAltitude!).round();
     }
     _lastAltitude = pos.altitude;

@@ -55,6 +55,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _signOut() async {
     await _supabase.auth.signOut();
+    if (mounted) Navigator.pushReplacementNamed(context, '/login'); 
   }
 
   String _formatDuration(String? raw) {
@@ -137,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       // ── Start Ride button ─────────────────────────
                       GestureDetector(
-                        onTap: () => Navigator.pushNamed(context, '/ride'),
+                        onTap: () => Navigator.pushNamed(context, '/ride').then((_) => _loadData()),
                         child: Container(
                           height: 120,
                           decoration: BoxDecoration(
@@ -221,7 +222,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 28),
 
-                      // ── Quick nav ─────────────────────────────────
                       Row(
                         children: [
                           Expanded(
@@ -229,7 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               icon: Icons.history_rounded,
                               label: 'History',
                               onTap: () => Navigator.pushNamed(
-                                  context, '/history'),
+                                  context, '/history').then((_) => _loadData()),
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -255,7 +255,6 @@ class _HomeScreenState extends State<HomeScreen> {
 
                       const SizedBox(height: 28),
 
-                      // ── Recent rides ──────────────────────────────
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -346,7 +345,6 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
-// ── Small stat card ──────────────────────────────────────────────────────────
 class _StatCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -409,7 +407,6 @@ class _StatCard extends StatelessWidget {
   }
 }
 
-// ── Quick nav card ───────────────────────────────────────────────────────────
 class _NavCard extends StatelessWidget {
   final IconData icon;
   final String label;
@@ -457,7 +454,6 @@ class _NavCard extends StatelessWidget {
   }
 }
 
-// ── Ride list card ───────────────────────────────────────────────────────────
 class _RideCard extends StatelessWidget {
   final String name;
   final String distance;
