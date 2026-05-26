@@ -1,4 +1,3 @@
-// lib/features/ride/ride_screen.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -325,10 +324,10 @@ class _StatsOverlay extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.58),
+          color: Colors.black.withValues(alpha: 0.58),
           borderRadius: BorderRadius.circular(18),
           border: Border.all(
-              color: Colors.white.withOpacity(0.12), width: 1),
+              color: Colors.white.withValues(alpha: 0.12), width: 1),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -368,7 +367,7 @@ class _Divider extends StatelessWidget {
   Widget build(BuildContext context) => Container(
         width: 1,
         height: 32,
-        color: Colors.white.withOpacity(0.2),
+        color: Colors.white.withValues(alpha: 0.2),
       );
 }
 
@@ -428,19 +427,18 @@ class _ControlBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
     final isIdle = state.status == RideStatus.idle;
-    final isActive = state.status == RideStatus.active;
     final isPaused = state.status == RideStatus.paused;
     final isStopped = state.status == RideStatus.stopped;
 
     return Container(
       padding: EdgeInsets.fromLTRB(24, 20, 24, 20 + bottomInset),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.96),
+        color: Colors.white.withValues(alpha: 0.96),
         borderRadius:
             const BorderRadius.vertical(top: Radius.circular(28)),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.12),
+            color: Colors.black.withValues(alpha: 0.12),
             blurRadius: 24,
             offset: const Offset(0, -6),
           )
@@ -516,7 +514,7 @@ class _BigButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: color.withOpacity(0.4),
+                color: color.withValues(alpha: 0.4),
                 blurRadius: 16,
                 offset: const Offset(0, 6))
           ],
@@ -561,7 +559,7 @@ class _ActionButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-                color: color.withOpacity(0.35),
+                color: color.withValues(alpha: 0.35),
                 blurRadius: 12,
                 offset: const Offset(0, 4))
           ],
@@ -597,9 +595,9 @@ class _GlassButton extends StatelessWidget {
         width: 44,
         height: 44,
         decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.45),
+          color: Colors.black.withValues(alpha: 0.45),
           shape: BoxShape.circle,
-          border: Border.all(color: Colors.white.withOpacity(0.15)),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
         ),
         child: Center(child: child),
       ),

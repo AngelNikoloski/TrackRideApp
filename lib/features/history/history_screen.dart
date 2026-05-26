@@ -1,5 +1,3 @@
-// lib/features/history/history_screen.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:webview_flutter/webview_flutter.dart';
@@ -246,11 +244,11 @@ class _HistoryScreenState extends State<HistoryScreen> {
               width: 80,
               height: 80,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.08),
+                color: AppTheme.primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
               child: Icon(Icons.directions_bike_rounded,
-                  size: 40, color: AppTheme.primary.withOpacity(0.6)),
+                  size: 40, color: AppTheme.primary.withValues(alpha: 0.6)),
             ),
             const SizedBox(height: 16),
             const Text(
@@ -286,7 +284,7 @@ class _HistoryScreenState extends State<HistoryScreen> {
       child: ListView.separated(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         itemCount: _rides.length,
-        separatorBuilder: (_, __) => const SizedBox(height: 12),
+        separatorBuilder: (_, _) => const SizedBox(height: 12),
         itemBuilder: (_, i) {
           final ride = _rides[i];
           return _RideListCard(
@@ -338,7 +336,7 @@ class _RideListCard extends StatelessWidget {
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
+              color: Colors.black.withValues(alpha: 0.05),
               blurRadius: 10,
               offset: const Offset(0, 2),
             ),
@@ -350,7 +348,7 @@ class _RideListCard extends StatelessWidget {
               width: 50,
               height: 50,
               decoration: BoxDecoration(
-                color: AppTheme.primary.withOpacity(0.10),
+                color: AppTheme.primary.withValues(alpha: 0.10),
                 borderRadius: BorderRadius.circular(14),
               ),
               child: const Icon(
@@ -445,7 +443,7 @@ class _RideDetailSheetState extends State<_RideDetailSheet> {
   final _supabase = Supabase.instance.client;
   final _mapKey = GlobalKey<_StaticLeafletMapState>();
 
-  bool _mapReady = false;
+  
   bool _pointsLoaded = false;
 
   Future<void> _loadPoints() async {
@@ -541,7 +539,7 @@ class _RideDetailSheetState extends State<_RideDetailSheet> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        color: AppTheme.primary.withOpacity(0.10),
+                        color: AppTheme.primary.withValues(alpha: 0.10),
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Icon(
@@ -597,7 +595,6 @@ class _RideDetailSheetState extends State<_RideDetailSheet> {
                         child: _StaticLeafletMap(
                           key: _mapKey,
                           onMapReady: () {
-                            setState(() => _mapReady = true);
                             _loadPoints();
                           },
                         ),
@@ -642,7 +639,7 @@ class _RideDetailSheetState extends State<_RideDetailSheet> {
                         _DetailStatCard(
                           icon: Icons.terrain_rounded,
                           label: 'Elevation Gain',
-                          value: '${elevationGainM} m',
+                          value: '$elevationGainM m',
                           color: const Color(0xFF7C3AED),
                         ),
                         _DetailStatCard(
@@ -708,7 +705,7 @@ class _DetailStatCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -723,7 +720,7 @@ class _DetailStatCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.all(5),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(8),
                 ),
                 child: Icon(icon, color: color, size: 16),

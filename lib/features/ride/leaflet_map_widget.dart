@@ -1,5 +1,3 @@
-// lib/features/ride/leaflet_map_widget.dart
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import '../services/gps_service.dart';
@@ -34,9 +32,8 @@ class LeafletMapWidgetState extends State<LeafletMapWidget> {
       ..loadHtmlString(_mapHtml());
   }
 
-  // ── Public API ───────────────────────────────────────────────────────────────
-
-  /// Update the full route polyline + move the marker to the latest point.
+  //Public API
+  //Update the full route polyline + move the marker to the latest point.
   void updateRoute(List<RidePoint> points) {
     if (!_mapReady || points.isEmpty) return;
     final latlngs = points
@@ -64,7 +61,7 @@ class LeafletMapWidgetState extends State<LeafletMapWidget> {
 
   void _run(String js) => _controller.runJavaScript(js);
 
-  // ── HTML ─────────────────────────────────────────────────────────────────────
+  //HTML
   String _mapHtml() => '''
 <!DOCTYPE html>
 <html>

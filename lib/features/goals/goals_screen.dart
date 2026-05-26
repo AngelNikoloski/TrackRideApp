@@ -332,7 +332,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
+                            color: Colors.black.withValues(alpha: 0.05),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -439,11 +439,11 @@ class _GoalsScreenState extends State<GoalsScreen> {
                     margin: const EdgeInsets.all(2),
                     decoration: BoxDecoration(
                       color: isToday
-                          ? AppTheme.primary.withOpacity(0.12)
+                          ? AppTheme.primary.withValues(alpha: 0.12)
                           : rode
-                              ? const Color(0xFF16A34A).withOpacity(0.12)
+                              ? const Color(0xFF16A34A).withValues(alpha: 0.12)
                               : missed
-                                  ? const Color(0xFFDC2626).withOpacity(0.08)
+                                  ? const Color(0xFFDC2626).withValues(alpha: 0.08)
                                   : Colors.transparent,
                       borderRadius: BorderRadius.circular(8),
                       border: isToday
@@ -461,7 +461,7 @@ class _GoalsScreenState extends State<GoalsScreen> {
                                 ? AppTheme.primary
                                 : isFuture
                                     ? AppTheme.textSecondary
-                                        .withOpacity(0.4)
+                                        .withValues(alpha: 0.4)
                                     : AppTheme.textPrimary,
                             fontSize: 11,
                             fontWeight: isToday
@@ -531,7 +531,7 @@ class _WeeklyGoalCard extends StatelessWidget {
             color: (completed
                     ? const Color(0xFF16A34A)
                     : AppTheme.primary)
-                .withOpacity(0.35),
+                .withValues(alpha: 0.35),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -572,7 +572,7 @@ class _WeeklyGoalCard extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 14, vertical: 8),
                   decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
+                    color: Colors.white.withValues(alpha: 0.2),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: isSaving
@@ -607,7 +607,7 @@ class _WeeklyGoalCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 10,
-              backgroundColor: Colors.white.withOpacity(0.25),
+              backgroundColor: Colors.white.withValues(alpha: 0.25),
               valueColor:
                   const AlwaysStoppedAnimation<Color>(Colors.white),
             ),
@@ -658,7 +658,7 @@ class _StreakCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -703,8 +703,8 @@ class _StreakMessage extends StatelessWidget {
     if (streak >= 30) return '🏅 Incredible! 30+ days straight. You\'re unstoppable!';
     if (streak >= 14) return '💪 Two weeks straight! You\'re on fire!';
     if (streak >= 7) return '🔥 One full week streak! Keep it going!';
-    if (streak >= 3) return '⚡ ${streak} days in a row — great momentum!';
-    return '👍 ${streak} day streak — keep it up!';
+    if (streak >= 3) return '⚡ $streak days in a row — great momentum!';
+    return '👍 $streak day streak — keep it up!';
   }
 
   @override
@@ -757,7 +757,7 @@ class _MonthSummary extends StatelessWidget {
         borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
